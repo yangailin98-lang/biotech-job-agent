@@ -179,7 +179,7 @@ def summarize_with_deepseek(jobs):
 def send_email(content):
     """通过邮件发送整理好的信息"""
     msg = MIMEText(content, "plain", "utf-8")
-    msg["Subject"] = f"今日生物医药招聘信息 ({date.today()})"
+    msg["Subject"] = f"[医药招聘] 今日生物医药招聘信息 ({date.today()})"
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = EMAIL_ADDRESS   # 发给自己
 
