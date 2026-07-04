@@ -184,7 +184,7 @@ def send_email(content):
     msg["To"] = EMAIL_ADDRESS   # 发给自己
 
     # 使用 Gmail SMTP 发送
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    with smtplib.SMTP_SSL("smtp.163.com", 465) as server:
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.sendmail(EMAIL_ADDRESS, [EMAIL_ADDRESS], msg.as_string())
     print("邮件发送成功！")
