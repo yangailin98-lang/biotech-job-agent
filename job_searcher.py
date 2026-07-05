@@ -57,10 +57,10 @@ def search_jobs():
     
     # 补充一轮广泛搜索，专门抓时间线
     broad_queries = [
-        "生物医药 BD 战略 招聘 截止时间 2026",
+        "生物医药 BD 战略 招聘 截止时间 2027",
         "生物医药 商务拓展 校招 申请截止",
         "生物医药 战略 实习 招聘 时间",
-        "biotech business development strategy hiring deadline 2026 China"
+        "biotech business development strategy hiring deadline 2027 China"
     ]
     
     for query in broad_queries:
