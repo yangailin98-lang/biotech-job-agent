@@ -1,8 +1,8 @@
-name: Daily Biotech Job Search
+name: Daily Biotech Job Search v2
 
 on:
   schedule:
-    - cron: "0 7 * * *"   # UTC 7:00 = 北京时间 15:00
+    - cron: "0 13 * * *"   # UTC 7:00 = 北京时间 15:00
   workflow_dispatch:
 
 jobs:
