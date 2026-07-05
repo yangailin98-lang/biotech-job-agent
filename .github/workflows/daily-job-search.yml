@@ -1,30 +1,56 @@
-name: Daily Biotech Job Search v2
+name: 生物医药招聘情报-永不休眠版
 
 on:
+  # 1. 设置每 5 分钟触发一次，保持工作流活跃，防止休眠
   schedule:
-    - cron: "0 13 * * *"   # UTC 7:00 = 北京时间 15:00
+    - cron: "*/5 * * * *"
+  # 2. 保留手动触发，方便你随时测试
   workflow_dispatch:
 
 jobs:
-  run-job-search:
+  check-time-and-run:
     runs-on: ubuntu-latest
+    # 设置时区为上海，这样 cron 就直接是北京时间了
+    env:
+      TZ: Asia/Shanghai
     steps:
-      - name: Checkout code
+      - name: 检查是否到了下午三点
+        id: check_time
+        run: |
+          # 获取当前“小时”和“分钟”
+          HOUR=$(date +\%H)
+          MINUTE=$(date +\%M)
+          echo "现在是北京时间: $HOUR:$MINUTE"
+          
+          # 设定你想要的推送时间：下午 3 点整 (15:00)
+          if [ "$HOUR" -eq 15 ] && [ "$MINUTE" -eq 0 ]; then
+            echo "时间到了，开始执行任务..."
+            echo "run_job=true" >> $GITHUB_OUTPUT
+          else
+            echo "还没到下午3点，暂不执行。"
+            echo "run_job=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 2. 下面是你原来的找工作流程，只有时间到了才会执行
+      - name: Checkout 代码
+        if: steps.check_time.outputs.run_job == 'true'
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 设置 Python 环境
+        if: steps.check_time.outputs.run_job == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: 安装依赖
+        if: steps.check_time.outputs.run_job == 'true'
         run: pip install -r requirements.txt
 
-      - name: Run job searcher
+      - name: 开始搜索并推送
+        if: steps.check_time.outputs.run_job == 'true'
         env:
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: python job_searcher.py
-#
