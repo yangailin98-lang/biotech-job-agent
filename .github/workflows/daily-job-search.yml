@@ -3,7 +3,7 @@ name: Daily Biotech Job Search
 on:
   schedule:
     # 每天北京时间 8:00 (UTC 0:00)，可根据需要调整
-    - cron: "0 0 * * *"
+    - cron: "30 5 * * *"
   workflow_dispatch:   # 允许手动触发测试
 
 jobs:
