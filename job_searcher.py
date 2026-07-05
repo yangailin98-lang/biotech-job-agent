@@ -13,7 +13,7 @@ EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
 EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
 
 def search_jobs():
-    """用 Serper 进行多轮精准搜索，重点关注 BD/战略岗，并捕获时间信息"""
+    """重点搜索外企医药大厂官网招聘页及主流招聘网站"""
     url = "https://google.serper.dev/search"
     headers = {
         "X-API-KEY": SERPER_API_KEY,
@@ -22,22 +22,89 @@ def search_jobs():
     
     all_jobs = []
     
-    # 定义搜索组合：城市 + 岗位 + 企业类型/时间关键词
-    cities = ["广州", "深圳", "香港", "上海", "北京", "杭州"]
-    roles = ["商务拓展", "BD", "战略", "战略合作", "业务发展","市场准入","营销"]
-    keywords = ["校招", "实习", "招聘 截止时间", "招聘 申请时间"]
+    # ──────────────────────────────────────
+    # 第一轮：直接搜外企大厂官网招聘页面（site:搜索）
+    # ──────────────────────────────────────
+    # 列出你关注的外企医药大厂
+    big_pharma_sites = [
+        "pfizer.com.cn",        # 辉瑞
+        "roche.com.cn",         # 罗氏
+        "novartis.com.cn",      # 诺华
+        "astrazeneca.com.cn",   # 阿斯利康
+        "msdchina.com.cn",      # 默沙东
+        "bayer.com.cn",         # 拜耳
+        "boehringer-ingelheim.cn", # 勃林格殷格翰
+        "sanofi.cn",            # 赛诺菲
+        "gsk-china.com",        # 葛兰素史克
+        "lillychina.com",       # 礼来
+        "abbvie.com.cn",        # 艾伯维
+        "jnjchina.com.cn",      # 强生
+        "novonordisk.com.cn",   # 诺和诺德
+        "takeda.com.cn",        # 武田
+        "bms.com.cn",           # 百时美施贵宝
+    ]
     
-    # 多轮组合搜索
-    for city in cities:  # 先搜前3个城市控制额度，可自行改为 cities 搜全部
-        for role in roles:  # 同理，先搜核心岗位
-            for keyword in keywords[:2]:
-                query = f"{city} 生物医药 {role} {keyword}"
+    roles = ["商务拓展", "BD", "战略", "业务发展", "战略合作", 
+             "business development", "strategy", "corporate strategy"]
+    
+    for site in big_pharma_sites:
+        # 搜官网招聘页面的BD/战略岗
+        query = f'site:{site} ("商务拓展" OR "BD" OR "战略" OR "business development") (招聘 OR 校招 OR 实习 OR careers OR jobs)'
+        
+        payload = {
+            "q": query,
+            "gl": "cn",
+            "hl": "zh-cn",
+            "num": 5
+        }
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            result_data = response.json()
+            if "organic" in result_data:
+                for r in result_data["organic"]:
+                    link = r.get("link", "")
+                    if link not in [j.get("link") for j in all_jobs]:
+                        all_jobs.append({
+                            "title": r.get("title", ""),
+                            "link": link,
+                            "snippet": r.get("snippet", ""),
+                            "date": r.get("date", ""),
+                            "source": "官网招聘页"
+                        })
+        except Exception as e:
+            print(f"搜索 {site} 出错: {e}")
+    
+    # ──────────────────────────────────────
+    # 第二轮：在主流招聘网站搜外企医药大厂
+    # ──────────────────────────────────────
+    # 猎聘、LinkedIn、前程无忧等站内搜索
+    job_platforms = [
+        "site:linkedin.com",
+        "site:liepin.com",      # 猎聘
+        "site:51job.com",       # 前程无忧
+        "site:zhaopin.com",     # 智联招聘
+    ]
+    
+    # 外企大厂名称（用于招聘网站搜）
+    pharma_names = [
+        "辉瑞", "罗氏", "诺华", "阿斯利康", "默沙东", "拜耳",
+        "赛诺菲", "葛兰素史克", "礼来", "艾伯维", "强生",
+        "诺和诺德", "武田", "百时美施贵宝", "安进", "吉利德",
+        "辉瑞", "默克", "雅培", "丹纳赫", "赛默飞", "碧迪"
+    ]
+    
+    cities = ["广州", "深圳", "香港", "上海", "北京", "杭州"]
+    
+    for platform in job_platforms:
+        for company in pharma_names[:6]:  # 先搜6家控制额度，可去掉[:6]搜全部
+            for city in cities[:3]:       # 先搜3个核心城市
+                query = f'{platform} {company} {city} ("商务拓展" OR "BD" OR "战略" OR "业务发展")'
                 
                 payload = {
                     "q": query,
                     "gl": "cn",
                     "hl": "zh-cn",
-                    "num": 10
+                    "num": 5
                 }
                 try:
                     response = requests.post(url, headers=headers, json=payload)
@@ -50,17 +117,20 @@ def search_jobs():
                                     "title": r.get("title", ""),
                                     "link": link,
                                     "snippet": r.get("snippet", ""),
-                                    "date": r.get("date", "")  # 有些结果会自带发布日期
+                                    "date": r.get("date", ""),
+                                    "source": "招聘平台"
                                 })
                 except Exception as e:
-                    print(f"搜索出错: {e}")
+                    print(f"搜索 {platform} {company} {city} 出错: {e}")
     
-    # 补充一轮广泛搜索，专门抓时间线
+    # ──────────────────────────────────────
+    # 第三轮：通用补充搜索（中国区外企+BD）
+    # ──────────────────────────────────────
     broad_queries = [
-        "生物医药 BD 战略 招聘 截止时间 2027",
-        "生物医药 商务拓展 校招 申请截止",
-        "生物医药 战略 实习 招聘 时间",
-        "biotech business development strategy hiring deadline 2027 China"
+        '外资药企 商务拓展 BD 招聘 2026',
+        '跨国药企 战略 校招 OR 实习 2026',
+        'multinational pharma business development strategy China hiring 2026',
+        '外企 生物医药 战略合作 招聘 截止时间',
     ]
     
     for query in broad_queries:
@@ -81,14 +151,14 @@ def search_jobs():
                             "title": r.get("title", ""),
                             "link": link,
                             "snippet": r.get("snippet", ""),
-                            "date": r.get("date", "")
+                            "date": r.get("date", ""),
+                            "source": "综合搜索"
                         })
         except Exception as e:
-            print(f"搜索出错: {e}")
+            print(f"综合搜索出错: {e}")
 
     print(f"初步搜索到 {len(all_jobs)} 条不重复结果，等待DeepSeek精选...")
-    return all_jobs[:40]  # 给 AI 多一点素材
-
+    return all_jobs[:50]
 def summarize_with_deepseek(jobs):
     """把招聘结果发给 DeepSeek，让它整理成易读摘要"""
     if not jobs:
