@@ -23,7 +23,7 @@ jobs:
           echo "现在是北京时间: $HOUR:$MINUTE"
           
           # 设定你想要的推送时间：下午 3 点整 (15:00)
-          if [ "$HOUR" -eq 15 ] && [ "$MINUTE" -eq 0 ]; then
+          if [ "$HOUR" -eq 21 ] && [ "$MINUTE" -eq 10 ]; then
             echo "时间到了，开始执行任务..."
             echo "run_job=true" >> $GITHUB_OUTPUT
           else
